@@ -1,0 +1,25 @@
+CREATE OR REPLACE FUNCTION check_etudiant_un_exam_jour()
+RETURNS TRIGGER AS $$
+DECLARE
+    exam_date DATE;
+    nb_exams INT;
+BEGIN
+    SELECT DATE(e.date_heure) INTO exam_date
+    FROM examens e WHERE e.module_id = NEW.module_id;
+
+    SELECT COUNT(*) INTO nb_exams
+    FROM inscriptions i
+    JOIN examens e ON i.module_id = e.module_id
+    WHERE i.etudiant_id = NEW.etudiant_id
+      AND DATE(e.date_heure) = exam_date;
+
+    IF nb_exams >= 1 THEN
+        RAISE EXCEPTION 'Conflit: étudiant déjà un examen ce jour';
+    END IF;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trg_etudiant_exam
+BEFORE INSERT ON inscriptions
+FOR EACH ROW EXECUTE FUNCTION check_etudiant_un_exam_jour();
