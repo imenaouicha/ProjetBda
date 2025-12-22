@@ -1,0 +1,19 @@
+CREATE OR REPLACE FUNCTION check_prof_max3()
+RETURNS TRIGGER AS $$
+DECLARE nb INT;
+BEGIN
+    SELECT COUNT(*) INTO nb
+    FROM examens e
+    WHERE e.prof_id = NEW.prof_id
+      AND DATE(e.date_heure) = DATE(NEW.date_heure);
+
+    IF nb >= 3 THEN
+        RAISE EXCEPTION 'Conflit: professeur déjà 3 examens ce jour';
+    END IF;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trg_prof_exam
+BEFORE INSERT ON examens
+FOR EACH ROW EXECUTE FUNCTION check_prof_max3();
