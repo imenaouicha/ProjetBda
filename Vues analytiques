@@ -1,0 +1,16 @@
+-- Occupation des salles
+CREATE VIEW v_occupation_salles AS
+SELECT l.nom, l.batiment, l.capacite,
+       e.date_heure, COUNT(i.etudiant_id) AS nb_inscrits
+FROM examens e
+JOIN lieu_examen l ON e.salle_id = l.id
+JOIN inscriptions i ON e.module_id = i.module_id
+GROUP BY l.nom, l.batiment, l.capacite, e.date_heure;
+
+-- Examens par étudiant
+CREATE VIEW v_examens_etudiant AS
+SELECT et.id AS etudiant_id, et.nom, et.prenom,
+       e.id AS examen_id, e.date_heure, e.module_id
+FROM etudiants et
+JOIN inscriptions ins ON ins.etudiant_id = et.id
+JOIN examens e ON e.module_id = ins.module_id;
