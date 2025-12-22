@@ -1,0 +1,103 @@
+-- Création de la base
+CREATE DATABASE exams_db;
+\c exams_db;
+
+-- Schéma dédié
+CREATE SCHEMA planning;
+SET search_path TO planning;
+
+-- Table des rôles applicatifs
+CREATE TABLE roles (
+    id SERIAL PRIMARY KEY,
+    nom VARCHAR(50) UNIQUE NOT NULL
+);
+
+-- Table des utilisateurs (authentification)
+CREATE TABLE utilisateurs (
+    id SERIAL PRIMARY KEY,
+    nom VARCHAR(100) NOT NULL,
+    email VARCHAR(120) UNIQUE NOT NULL,
+    mot_de_passe VARCHAR(255) NOT NULL, -- hashé avec bcrypt
+    role_id INT NOT NULL REFERENCES roles(id),
+    actif BOOLEAN DEFAULT TRUE,
+    created_at TIMESTAMP DEFAULT NOW()
+);
+
+-- Départements
+CREATE TABLE departements (
+    id SERIAL PRIMARY KEY,
+    nom VARCHAR(100) UNIQUE NOT NULL
+);
+
+-- Formations
+CREATE TABLE formations (
+    id SERIAL PRIMARY KEY,
+    nom VARCHAR(120) NOT NULL,
+    dept_id INT REFERENCES departements(id),
+    nb_modules INT CHECK (nb_modules >= 0),
+    UNIQUE (nom, dept_id)
+);
+
+-- Étudiants
+CREATE TABLE etudiants (
+    id SERIAL PRIMARY KEY,
+    nom VARCHAR(100),
+    prenom VARCHAR(100),
+    formation_id INT REFERENCES formations(id),
+    promo VARCHAR(50),
+    utilisateur_id INT REFERENCES utilisateurs(id) -- lien avec compte
+);
+
+-- Professeurs
+CREATE TABLE professeurs (
+    id SERIAL PRIMARY KEY,
+    nom VARCHAR(120),
+    dept_id INT REFERENCES departements(id),
+    specialite VARCHAR(120),
+    utilisateur_id INT REFERENCES utilisateurs(id)
+);
+
+-- Salles / amphis
+CREATE TABLE lieu_examen (
+    id SERIAL PRIMARY KEY,
+    nom VARCHAR(100),
+    capacite INT CHECK (capacite > 0),
+    type VARCHAR(30) CHECK (type IN ('amphi','salle_td','laboratoire')),
+    batiment VARCHAR(80),
+    UNIQUE (batiment, nom)
+);
+
+-- Modules
+CREATE TABLE modules (
+    id SERIAL PRIMARY KEY,
+    nom VARCHAR(120),
+    credits INT CHECK (credits >= 0),
+    formation_id INT REFERENCES formations(id),
+    pre_req_id INT REFERENCES modules(id)
+);
+
+-- Examens
+CREATE TABLE examens (
+    id SERIAL PRIMARY KEY,
+    module_id INT REFERENCES modules(id),
+    prof_id INT REFERENCES professeurs(id),
+    salle_id INT REFERENCES lieu_examen(id),
+    date_heure TIMESTAMP NOT NULL,
+    duree_minutes INT CHECK (duree_minutes BETWEEN 30 AND 360)
+);
+
+-- Inscriptions
+CREATE TABLE inscriptions (
+    etudiant_id INT REFERENCES etudiants(id),
+    module_id INT REFERENCES modules(id),
+    note NUMERIC(4,2),
+    PRIMARY KEY (etudiant_id, module_id)
+);
+
+-- Surveillances
+CREATE TABLE surveillances (
+    id SERIAL PRIMARY KEY,
+    examen_id INT REFERENCES examens(id),
+    prof_id INT REFERENCES professeurs(id),
+    priorite_dept BOOLEAN DEFAULT TRUE
+);
