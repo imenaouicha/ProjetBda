@@ -1,0 +1,4 @@
+CREATE INDEX idx_examens_date ON examens(date_heure);
+CREATE INDEX idx_examens_salle ON examens(salle_id);
+CREATE INDEX idx_inscriptions_etudiant ON inscriptions(etudiant_id);
+CREATE INDEX idx_inscriptions_module ON inscriptions(module_id);
