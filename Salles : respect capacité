@@ -2,8 +2,13 @@ CREATE OR REPLACE FUNCTION check_salle_capacite()
 RETURNS TRIGGER AS $$
 DECLARE capacite INT; nb_inscrits INT;
 BEGIN
-    SELECT l.capacite INTO capacite FROM lieu_examen l WHERE l.id = NEW.salle_id;
-    SELECT COUNT(*) INTO nb_inscrits FROM inscriptions i WHERE i.module_id = NEW.module_id;
+    SELECT l.capacite INTO capacite 
+    FROM planning.lieu_examen l 
+    WHERE l.id = NEW.salle_id;
+
+    SELECT COUNT(*) INTO nb_inscrits 
+    FROM planning.inscriptions i 
+    WHERE i.examen_id = NEW.id;
 
     IF nb_inscrits > capacite THEN
         RAISE EXCEPTION 'Capacité dépassée: % inscrits > % places', nb_inscrits, capacite;
@@ -13,6 +18,7 @@ END;
 $$ LANGUAGE plpgsql;
 
 CREATE TRIGGER trg_salle_capacite
-BEFORE INSERT ON examens
+BEFORE INSERT OR UPDATE ON planning.examens
 FOR EACH ROW EXECUTE FUNCTION check_salle_capacite();
+
 
