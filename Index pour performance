@@ -1,4 +1,1 @@
-CREATE INDEX idx_examens_date ON examens(date_heure);
-CREATE INDEX idx_examens_salle ON examens(salle_id);
-CREATE INDEX idx_inscriptions_etudiant ON inscriptions(etudiant_id);
-CREATE INDEX idx_inscriptions_module ON inscriptions(module_id);
+CREATE INDEX idx_examens_date ON planning.examens(date_heure); CREATE INDEX idx_examens_salle ON planning.examens(salle_id); CREATE INDEX idx_inscriptions_etudiant ON planning.inscriptions(etudiant_id); CREATE INDEX idx_inscriptions_module ON planning.inscriptions(module_id); CREATE INDEX idx_inscriptions_examen ON planning.inscriptions(examen_id);
