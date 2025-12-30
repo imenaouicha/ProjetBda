@@ -1,30 +1,37 @@
+
+
+
+
 CREATE OR REPLACE FUNCTION check_salle_capacite()
 RETURNS TRIGGER AS $$
 DECLARE
     capacite INT;
     nb_inscrits INT;
 BEGIN
-    SELECT l.capacite INTO capacite
-    FROM planning.examens e
-    JOIN planning.lieu_examen l ON e.salle_id = l.id
-    WHERE e.id = NEW.examen_id;
+    -- capacité de la salle
+    SELECT l.capacite
+    INTO capacite
+    FROM planning.lieu_examen l
+    WHERE l.id = NEW.salle_id;
 
-    SELECT COUNT(*) INTO nb_inscrits
-    FROM planning.inscriptions
-    WHERE examen_id = NEW.examen_id;
+    -- nombre d'étudiants inscrits à cet examen
+    SELECT COUNT(*)
+    INTO nb_inscrits
+    FROM planning.inscriptions i
+    WHERE i.examen_id = NEW.id;
 
-    IF nb_inscrits >= capacite THEN
-        RAISE EXCEPTION 'Capacité salle dépassée';
+    IF nb_inscrits > capacite THEN
+        RAISE EXCEPTION
+        'Capacité dépassée (% inscrits / % places)',
+        nb_inscrits, capacite;
     END IF;
 
     RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
+DROP TRIGGER IF EXISTS trg_salle_capacite ON planning.examens;
 
 CREATE TRIGGER trg_salle_capacite
-BEFORE INSERT ON planning.inscriptions
+BEFORE INSERT OR UPDATE ON planning.examens
 FOR EACH ROW
 EXECUTE FUNCTION check_salle_capacite();
-
-
-
