@@ -1,37 +1,27 @@
-
-
-
-
-CREATE OR REPLACE FUNCTION check_salle_capacite()
+CREATE OR REPLACE FUNCTION planning.check_salle_capacite()
 RETURNS TRIGGER AS $$
 DECLARE
-    capacite INT;
-    nb_inscrits INT;
+    v_capacite INT;
+    v_nb_inscrits INT;
 BEGIN
-    -- capacité de la salle
-    SELECT l.capacite
-    INTO capacite
+    -- 1. Récupérer la capacité de la salle associée à l'examen
+    -- On passe par la table examens car salle_id n'est pas dans inscriptions
+    SELECT l.capacite INTO v_capacite
     FROM planning.lieu_examen l
-    WHERE l.id = NEW.salle_id;
+    JOIN planning.examens e ON e.salle_id = l.id
+    WHERE e.id = NEW.examen_id;
 
-    -- nombre d'étudiants inscrits à cet examen
-    SELECT COUNT(*)
-    INTO nb_inscrits
-    FROM planning.inscriptions i
-    WHERE i.examen_id = NEW.id;
+    -- 2. Compter le nombre d'étudiants déjà inscrits à cet examen
+    SELECT COUNT(*) INTO v_nb_inscrits
+    FROM planning.inscriptions
+    WHERE examen_id = NEW.examen_id;
 
-    IF nb_inscrits > capacite THEN
-        RAISE EXCEPTION
-        'Capacité dépassée (% inscrits / % places)',
-        nb_inscrits, capacite;
+    -- 3. Vérifier si on dépasse la capacité
+    -- (v_nb_inscrits + 1) car l'étudiant actuel n'est pas encore compté
+    IF (v_nb_inscrits + 1) > v_capacite THEN
+        RAISE EXCEPTION 'Action annulée : La salle est déjà pleine (Capacité max : %)', v_capacite;
     END IF;
 
     RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
-DROP TRIGGER IF EXISTS trg_salle_capacite ON planning.examens;
-
-CREATE TRIGGER trg_salle_capacite
-BEFORE INSERT OR UPDATE ON planning.examens
-FOR EACH ROW
-EXECUTE FUNCTION check_salle_capacite();
